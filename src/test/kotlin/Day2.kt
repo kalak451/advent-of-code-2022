@@ -51,4 +51,5 @@ class Day2 {
         return File(ClassLoader.getSystemResource("day2.txt").file).readLines()
             .map { Pair(it[0], it[2]) }
     }
+
 }
