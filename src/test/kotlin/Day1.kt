@@ -26,8 +26,8 @@ class Day1 {
 
         return data
             .asSequence()
-            .delimited { x, _ -> x.isBlank() }
-            .map { x -> x.filter { it.isNotBlank() }.sumOf { it.toLong() } }
+            .delimited { x -> x.isBlank() }
+            .map { x -> x.sumOf { it.toLong() } }
     }
 
     private fun loadData(): List<String> {

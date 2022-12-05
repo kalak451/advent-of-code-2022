@@ -1,18 +1,17 @@
 import java.util.*
 
-fun <T> Sequence<T>.delimited(predicate: (T, T) -> Boolean): Sequence<List<T>> {
+fun <T> Sequence<T>.delimited(predicate: (T) -> Boolean): Sequence<List<T>> {
     val underlying = this
     return sequence {
         val buffer = mutableListOf<T>()
-        var last: T? = null
         for (current in underlying) {
-            val shouldSplit = last?.let { predicate(it, current) } ?: false
+            val shouldSplit = predicate(current)
             if (shouldSplit) {
                 yield(buffer.toList())
                 buffer.clear()
+            } else {
+                buffer.add(current)
             }
-            buffer.add(current)
-            last = current
         }
         if (buffer.isNotEmpty()) {
             yield(buffer)
@@ -20,6 +19,33 @@ fun <T> Sequence<T>.delimited(predicate: (T, T) -> Boolean): Sequence<List<T>> {
     }
 }
 
+fun <T> Sequence<T>.split(predicate: (T) -> Boolean): Sequence<List<T>> {
+    val underlying = this
+    return sequence {
+        val buffer = mutableListOf<T>()
+        for (current in underlying) {
+            val shouldSplit = predicate(current)
+            if (shouldSplit) {
+                yield(buffer.toList())
+                buffer.clear()
+            }
+
+            buffer.add(current)
+        }
+        if (buffer.isNotEmpty()) {
+            yield(buffer)
+        }
+    }
+}
+
+fun String.allInts(): List<Int> {
+    val pattern = Regex("-?\\d+")
+
+    return pattern
+        .findAll(this)
+        .map { it.value.toInt() }
+        .toList()
+}
 
 private fun <T> shortestPath(start: T, adj: (T) -> List<Pair<T, Long>>): Map<T, Long> {
     val dist: MutableMap<T, Long> = mutableMapOf()

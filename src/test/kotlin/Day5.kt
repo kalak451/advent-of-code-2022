@@ -1,99 +1,92 @@
 import org.junit.jupiter.api.Test
 import java.io.File
-import java.util.*
 import kotlin.test.assertEquals
 
 class Day5 {
-    val sample = """
-    [D]
-[N] [C]
-[Z] [M] [P]
- 1   2   3
-
-move 1 from 2 to 1
-move 3 from 1 to 3
-move 2 from 2 to 1
-move 1 from 1 to 2
+    private val sample = """
+                [D]
+            [N] [C]
+            [Z] [M] [P]
+             1   2   3
+            
+            move 1 from 2 to 1
+            move 3 from 1 to 3
+            move 2 from 2 to 1
+            move 1 from 1 to 2
         """.trimIndent().split("\n");
+
     @Test
     fun p1Test() {
-        val data = sample
-
-        val board = loadBoard(data)
-        val moves = loadMoves(data)
+        val (board, moves) = loadProblem(sample)
 
         moveSingle(board, moves)
 
-        val answer = board.map { it.peek() }.joinToString("")
+        val answer = boardToAnswer(board)
 
         assertEquals("CMZ", answer)
     }
+
     @Test
     fun part1() {
-        val data = loadData();
-
-        val board = loadBoard(data)
-        val moves = loadMoves(data)
+        val (board, moves) = loadProblem()
 
         moveSingle(board, moves)
 
-        val answer = board.map { it.peek() }.joinToString("")
+        val answer = boardToAnswer(board)
 
         assertEquals("BZLVHBWQF", answer)
     }
 
     @Test
     fun p2Test() {
-        val data = sample
-
-        val board = loadBoard(data)
-        val moves = loadMoves(data)
+        val (board, moves) = loadProblem(sample)
 
         moveMultiple(board, moves)
 
-        val answer = board.map { it.peek() }.joinToString("")
+        val answer = boardToAnswer(board)
 
         assertEquals("MCD", answer)
     }
 
     @Test
     fun part2() {
-        val data = loadData();
-        val board = loadBoard(data)
-        val moves = loadMoves(data)
+        val (board, moves) = loadProblem()
 
         moveMultiple(board, moves)
 
-        val answer = board.map { it.peek() }.joinToString("")
+        val answer = boardToAnswer(board)
 
         assertEquals("TDGJQTZSL", answer)
     }
 
+    private fun boardToAnswer(board: List<MutableList<Char>>) =
+        board.map { it.first() }.joinToString("")
+
+    private fun loadProblem(data: List<String> = loadData()): Pair<List<MutableList<Char>>, List<List<Int>>> {
+        val (boardLines, moveLines) = data.asSequence().delimited { a -> a.isBlank() }.toList()
+        val board = loadBoard(boardLines)
+        val moves = loadMoves(moveLines)
+        return Pair(board, moves)
+    }
+
     private fun moveSingle(
-        board: List<Stack<Char>>,
-        moves: List<Triple<Int, Int, Int>>
+        board: List<MutableList<Char>>,
+        moves: List<List<Int>>
     ) {
-        moves.forEach { mv ->
-            (0 until mv.first).forEach { _ ->
-                val x = board[mv.second - 1].pop()
-                board[mv.third - 1].push(x)
+        moves.forEach { (num, from, to) ->
+            (0 until num).forEach { _ ->
+                board[to - 1].add(0, board[from - 1].removeFirst())
             }
         }
     }
 
     private fun moveMultiple(
-        board: List<Stack<Char>>,
-        moves: List<Triple<Int, Int, Int>>
+        board: List<MutableList<Char>>,
+        moves: List<List<Int>>
     ) {
-        moves.forEach { mv ->
-            val tempStack = Stack<Char>()
-            (0 until mv.first).forEach { _ ->
-                tempStack.push(board[mv.second - 1].pop())
-            }
-
-            (0 until mv.first).forEach { _ ->
-                board[mv.third - 1].push(tempStack.pop())
-            }
+        moves.forEach { (num, from, to) ->
+            val block = board[from - 1].removeAt(0 until num)
+            board[to - 1].addAll(0, block)
         }
     }
 
@@ -101,45 +94,34 @@ move 1 from 1 to 2
         return File(ClassLoader.getSystemResource("day5.txt").file).readLines()
     }
 
-    private fun loadBoard(data: List<String>): List<Stack<Char>> {
-        val boardLines = data
-            .takeWhile { it.isNotBlank() }
+    private fun loadBoard(boardLines: List<String>): List<MutableList<Char>> {
+        val (crateLines, indexLines) = boardLines.asSequence().split { !it.contains('[') }.toList()
+        val crates = List(indexLines.single().allInts().size) { mutableListOf<Char>() }
 
-        val numCols = boardLines.last().split(' ').last().toInt()
-        val board = List(numCols) { Stack<Char>() }
-
-        boardLines.takeWhile { it.contains('[') }.forEach { line ->
-            line.chunked(4).forEachIndexed { idx, chunk ->
-                val letter = chunk[1]
-                if (!letter.isWhitespace()) {
-                    board[idx].push(letter)
-                }
-            }
+        crateLines.forEach { l ->
+            l.chunked(4).map { it[1] }.mapIndexed { i, c -> if (c != ' ') crates[i].add(c) }
         }
 
-        return board.map { s->
-            val x = Stack<Char>()
-            s.toList().reversed().forEach { x.push(it) }
-            x
-        }
+        return crates
     }
 
-    private fun loadMoves(data: List<String>): List<Triple<Int, Int, Int>> {
-        val moveLines = data.dropWhile { !it.startsWith("move") }
-
-        val pattern = Regex("^move (\\d*) from (\\d*) to (\\d*)$")
-
-        return moveLines
-            .map { pattern.matchEntire(it)!! }
-            .map { Triple(it.groupValues[1].toInt(), it.groupValues[2].toInt(), it.groupValues[3].toInt()) }
+    private fun loadMoves(moveLines: List<String>): List<List<Int>> {
+        return moveLines.map { it.allInts() }
     }
 
-    fun allTheInts(input: String): List<Int> {
-        val pattern = Regex("-?\\d+")
+    fun <E> MutableList<E>.removeAt(r: IntRange): List<E> {
 
-        return pattern
-            .findAll(input)
-            .map { it.value.toInt() }
-            .toList()
+        val prefixRange = 0 until r.first
+        val suffixRange = r.last + 1 until this.size
+
+        val prefix = this.slice(prefixRange)
+        val slice = this.slice(r)
+        val suffix = this.slice(suffixRange)
+
+        this.clear()
+        this.addAll(prefix)
+        this.addAll(suffix)
+
+        return slice
     }
 }
