@@ -20,14 +20,7 @@ class Day6 {
     }
 
     private fun doPart1(data: String): Int {
-        return data
-            .asSequence()
-            .mapIndexed { i, x -> Pair(i+1, x) }
-            .windowed(4, 1, true)
-            .map { l -> Pair(l.last().first, l.map { it.second }.toSet()) }
-            .filter { p -> p.second.size == 4 }
-            .map { p -> p.first }
-            .first()
+        return findWindow(data, 4);
     }
 
     @Test
@@ -48,14 +41,13 @@ class Day6 {
     }
 
     private fun doPart2(data: String): Int {
+        return findWindow(data, 14)
+    }
+
+    private fun findWindow(data: String, windowSize: Int): Int {
         return data
-            .asSequence()
-            .mapIndexed { i, x -> Pair(i+1, x) }
-            .windowed(14, 1, true)
-            .map { l -> Pair(l.last().first, l.map { it.second }.toSet()) }
-            .filter { p -> p.second.size == 14 }
-            .map { p -> p.first }
-            .first()
+            .windowed(windowSize)
+            .indexOfFirst { w -> w.toSet().size == windowSize } + windowSize
     }
 
     private fun loadData(): List<String> {
