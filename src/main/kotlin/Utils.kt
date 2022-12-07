@@ -26,8 +26,10 @@ fun <T> Sequence<T>.split(predicate: (T) -> Boolean): Sequence<List<T>> {
         for (current in underlying) {
             val shouldSplit = predicate(current)
             if (shouldSplit) {
-                yield(buffer.toList())
-                buffer.clear()
+                if (buffer.isNotEmpty()) {
+                    yield(buffer.toList())
+                    buffer.clear()
+                }
             }
 
             buffer.add(current)
