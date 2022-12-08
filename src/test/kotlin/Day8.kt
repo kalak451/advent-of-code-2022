@@ -41,10 +41,15 @@ class Day8 {
     }
 
     private fun calculateScore(data: List<String>): Int {
-        val answer = data.first().indices.flatMap { x -> data.indices.map { y -> Pair(x, y) } }
-            .map { (x, y) -> calculateScore(data, x, y) }
-            .max()
-        return answer
+        return data
+            .first()
+            .indices
+            .flatMap { x ->
+                data.indices.map { y -> Pair(x, y) }
+            }
+            .maxOf { (x, y) ->
+                calculateScore(data, x, y)
+            }
     }
 
     private fun calcVisible(data: List<String>): MutableList<Pair<Int, Int>> {
@@ -54,17 +59,7 @@ class Day8 {
         val visible = mutableListOf<Pair<Int, Int>>()
 
         for (x in 0 until xSize) {
-            visible.add(Pair(x, 0))
-            visible.add(Pair(x, ySize - 1))
-        }
-
-        for (y in 1 until ySize - 1) {
-            visible.add(Pair(0, y))
-            visible.add(Pair(xSize - 1, y))
-        }
-
-        for (x in 1 until xSize - 1) {
-            for (y in 1 until ySize - 1) {
+            for (y in 0 until ySize) {
                 if (isVisible(data, x, y)) {
                     visible.add(Pair(x, y))
                 }
@@ -84,7 +79,7 @@ class Day8 {
         val correctedUp = if (up == -1) y else up
 
         val down = checkDown(grid, x, y)
-        val correctedDown = if(down == -1) (grid.size - 1 -y) else down
+        val correctedDown = if (down == -1) (grid.size - 1 - y) else down
 
         return correctedLeft * correctedRight * correctedUp * correctedDown
     }
@@ -95,66 +90,25 @@ class Day8 {
                 || checkUp(grid, x, y) == -1
                 || checkDown(grid, x, y) == -1)
 
-    private fun checkLeft(
-        grid: List<String>,
-        x: Int,
-        y: Int
-    ): Int {
-        val currentHeight = grid[y][x].digitToInt()
-        val idx = (x - 1 downTo 0)
-            .map { grid[y][it].digitToInt() }
-            .indexOfFirst { z -> z >= currentHeight }
-
-        return if (idx == -1) {
-            -1
-        } else {
-            idx + 1
-        }
+    private fun checkLeft(grid: List<String>, x: Int, y: Int): Int {
+        return doCheck(grid, (x - 1 downTo 0).withY(y), x, y)
     }
 
-    private fun checkUp(
-        grid: List<String>,
-        x: Int,
-        y: Int
-    ): Int {
-        val currentHeight = grid[y][x].digitToInt()
-        val idx = (y - 1 downTo 0)
-            .map { grid[it][x].digitToInt() }
-            .indexOfFirst { z -> z >= currentHeight }
-
-        return if (idx == -1) {
-            -1
-        } else {
-            idx + 1
-        }
+    private fun checkUp(grid: List<String>, x: Int, y: Int): Int {
+        return doCheck(grid, (y - 1 downTo 0).withX(x), x, y)
     }
 
-    private fun checkRight(
-        grid: List<String>,
-        x: Int,
-        y: Int
-    ): Int {
-        val currentHeight = grid[y][x].digitToInt()
-        val idx = (x+1 until grid.first().length)
-            .map { grid[y][it].digitToInt() }
-            .indexOfFirst { z -> z >= currentHeight }
-
-        return if (idx == -1) {
-            -1
-        } else {
-            idx + 1
-        }
+    private fun checkRight(grid: List<String>, x: Int, y: Int): Int {
+        return doCheck(grid, (x + 1 until grid.first().length).withY(y), x, y)
     }
 
-    private fun checkDown(
-        grid: List<String>,
-        x: Int,
-        y: Int
-    ): Int {
+    private fun checkDown(grid: List<String>, x: Int, y: Int): Int {
+        return doCheck(grid, (y + 1 until grid.size).withX(x), x, y)
+    }
+
+    private fun doCheck(grid: List<String>, pointsToCheck: List<Pair<Int, Int>>, x: Int, y: Int): Int {
         val currentHeight = grid[y][x].digitToInt()
-        val idx = (y+1 until grid.size)
-            .map { grid[it][x].digitToInt() }
-            .indexOfFirst { z -> z >= currentHeight }
+        val idx = pointsToCheck.map { (xx, yy) -> grid[yy][xx].digitToInt() }.indexOfFirst { z -> z >= currentHeight }
 
         return if (idx == -1) {
             -1
@@ -165,5 +119,13 @@ class Day8 {
 
     private fun loadData(): List<String> {
         return File(ClassLoader.getSystemResource("day8.txt").file).readLines()
+    }
+
+    private fun IntProgression.withX(x: Int): List<Pair<Int, Int>> {
+        return this.map { y -> Pair(x, y) }
+    }
+
+    private fun IntProgression.withY(y: Int): List<Pair<Int, Int>> {
+        return this.map { x -> Pair(x, y) }
     }
 }
