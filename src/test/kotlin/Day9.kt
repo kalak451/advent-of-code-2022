@@ -1,6 +1,7 @@
 import org.junit.jupiter.api.Test
 import java.io.File
 import kotlin.math.abs
+import kotlin.math.sign
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -130,12 +131,11 @@ class Day9 {
             assertTrue(false, "Unexpected Move!")
         }
 
-        return if (abs(vDist) == 2 && abs(hDist) == 2) {
-            Pair(t.first + (hDist / 2), t.second + (vDist / 2))
-        } else if (abs(vDist) == 2) {
-            Pair(h.first, t.second + (vDist / 2))
-        } else if (abs(hDist) == 2) {
-            Pair(t.first + (hDist / 2), h.second)
+        return if(abs(vDist) >= 2 || abs(hDist) >= 2) {
+            Pair(
+                t.first + hDist.sign,
+                t.second + vDist.sign
+            )
         } else {
             t
         }
