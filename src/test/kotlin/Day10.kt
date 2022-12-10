@@ -4,89 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class Day10 {
-
-    @Test
-    fun part1() {
-        val instructions = loadData("day10.txt").toMutableList()
-
-        val interestingCycles = setOf(20, 60, 100, 140, 180, 220)
-
-        val results = runMachine(instructions, 220)
-
-        val interestingValues = results
-            .withIndex()
-            .filter { v -> interestingCycles.contains(v.index + 1) }
-            .toList()
-
-        assertEquals(16480, interestingValues.map { it.value * (it.index + 1) }.sum())
-    }
-
-    @Test
-    fun part2() {
-        val instructions = loadData("day10.txt").toMutableList()
-
-        val results = runMachine(instructions, 240).chunked(40)
-
-        val img = results
-            .map { it.withIndex() }
-            .map {
-                it.map { v ->
-                    val dist = abs(v.index - v.value)
-                    if (dist <= 1) {
-                        '#'
-                    } else {
-                        '.'
-                    }
-                }
-            }
-            .map { it.joinToString("") }
-
-        img.forEach { println(it) }
-
-        val expected = """
-            ###..#....####.####.#..#.#....###..###..
-            #..#.#....#....#....#..#.#....#..#.#..#.
-            #..#.#....###..###..#..#.#....#..#.###..
-            ###..#....#....#....#..#.#....###..#..#.
-            #....#....#....#....#..#.#....#....#..#.
-            #....####.####.#.....##..####.#....###..
-        """.trimIndent()
-
-        assertEquals(expected, img.joinToString("\n"))
-    }
-
-    @Test
-    fun part2Sample1() {
-        val instructions = loadData("day10-sample1.txt").toMutableList()
-
-        val results = runMachine(instructions, 240).chunked(40)
-
-        val img = results
-            .map { it.withIndex() }
-            .map { it.map { v ->
-                val dist = abs(v.index - v.value)
-                if(dist <= 1) {
-                    '#'
-                } else {
-                    '.'
-                }
-            } }
-            .map { it.joinToString("") }
-
-        img.forEach { println(it) }
-
-        val expected = """
-            ##..##..##..##..##..##..##..##..##..##..
-            ###...###...###...###...###...###...###.
-            ####....####....####....####....####....
-            #####.....#####.....#####.....#####.....
-            ######......######......######......####
-            #######.......#######.......#######.....
-        """.trimIndent()
-
-        assertEquals(expected, img.joinToString("\n"))
-
-    }
+    private val interestingCycles = setOf(20, 60, 100, 140, 180, 220)
 
     @Test
     fun part1Sample() {
@@ -105,20 +23,71 @@ class Day10 {
     fun part1Sample1() {
         val instructions = loadData("day10-sample1.txt").toMutableList()
 
-        val interestingCycles = setOf(20, 60, 100, 140, 180, 220)
-
         val results = runMachine(instructions, 220)
 
         assertEquals(220, results.size)
 
-        val interestingValues = results
-            .withIndex()
-            .filter { v -> interestingCycles.contains(v.index + 1) }
-            .toList()
+        val interestingValues = extractInterestingValues(results)
 
         assertEquals(listOf(21L, 19, 18, 21, 16, 18), interestingValues.map { it.value }.toList())
 
         assertEquals(13140, interestingValues.map { it.value * (it.index + 1) }.sum())
+    }
+
+    @Test
+    fun part1() {
+        val instructions = loadData("day10.txt").toMutableList()
+
+        val results = runMachine(instructions, 220)
+
+        val interestingValues = extractInterestingValues(results)
+
+        assertEquals(16480, interestingValues.map { it.value * (it.index + 1) }.sum())
+    }
+
+    @Test
+    fun part2Sample1() {
+        val instructions = loadData("day10-sample1.txt").toMutableList()
+
+        val results = runMachine(instructions, 240)
+
+        val img = generateImage(results)
+
+        println(img)
+
+        val expected = """
+            ##..##..##..##..##..##..##..##..##..##..
+            ###...###...###...###...###...###...###.
+            ####....####....####....####....####....
+            #####.....#####.....#####.....#####.....
+            ######......######......######......####
+            #######.......#######.......#######.....
+        """.trimIndent()
+
+        assertEquals(expected, img)
+
+    }
+
+    @Test
+    fun part2() {
+        val instructions = loadData("day10.txt").toMutableList()
+
+        val results = runMachine(instructions, 240)
+
+        val img = generateImage(results)
+
+        println(img)
+
+        val expected = """
+            ###..#....####.####.#..#.#....###..###..
+            #..#.#....#....#....#..#.#....#..#.#..#.
+            #..#.#....###..###..#..#.#....#..#.###..
+            ###..#....#....#....#..#.#....###..#..#.
+            #....#....#....#....#..#.#....#....#..#.
+            #....####.####.#.....##..####.#....###..
+        """.trimIndent()
+
+        assertEquals(expected, img)
     }
 
     private fun runMachine(instructions: MutableList<String>, toRun: Int): List<Long> {
@@ -148,6 +117,33 @@ class Day10 {
             instructionCycle--
             x
         }
+    }
+
+    private fun generateImage(results: List<Long>): String {
+        val img = results
+            .asSequence()
+            .chunked(40)
+            .map { it.withIndex() }
+            .map {
+                it.map { v ->
+                    val dist = abs(v.index - v.value)
+                    if (dist <= 1) {
+                        '#'
+                    } else {
+                        '.'
+                    }
+                }
+            }
+            .map { it.joinToString("") }
+            .joinToString("\n")
+        return img
+    }
+
+    private fun extractInterestingValues(results: List<Long>): List<IndexedValue<Long>> {
+        return results
+            .withIndex()
+            .filter { v -> interestingCycles.contains(v.index + 1) }
+            .toList()
     }
 
     private fun loadData(filename: String): List<String> {
