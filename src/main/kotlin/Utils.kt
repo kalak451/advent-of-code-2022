@@ -49,7 +49,7 @@ fun String.allInts(): List<Int> {
         .toList()
 }
 
-private fun <T> shortestPath(start: T, adj: (T) -> List<Pair<T, Long>>): Map<T, Long> {
+fun <T> shortestPath(start: T, adj: (T) -> List<Pair<T, Long>>): Map<T, Long> {
     val dist: MutableMap<T, Long> = mutableMapOf()
     dist[start] = 0
 
