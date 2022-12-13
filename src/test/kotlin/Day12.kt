@@ -166,7 +166,7 @@ class Day12 {
             .map { p -> map[p]!! }
             .min()
 
-        assertEquals(0, answer)
+        assertEquals(388, answer)
 
     }
 
