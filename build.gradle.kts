@@ -27,3 +27,8 @@ tasks.withType<KotlinCompile> {
 application {
     mainClass.set("MainKt")
 }
+
+tasks.withType<Test> {
+    minHeapSize = "1024m"
+    maxHeapSize = "2048m"
+}
