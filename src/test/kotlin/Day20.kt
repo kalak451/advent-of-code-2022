@@ -1,6 +1,9 @@
 import java.io.File
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+
+private const val i1 = 811589153
 
 class Day20 {
 
@@ -16,157 +19,115 @@ class Day20 {
 
     @Test
     fun part1Sample() {
-        val results = processData(sample.map { it.toInt() })
+        val nodes = toNodes(sample.map { it.toLong() })
+        runCycle(nodes)
 
-        assertEquals(
-            listOf(1, 2, -3, 4, 0, 3, -2),
-            results
-        )
+        val zeroNode = nodes.find { it.value == 0L }!!
 
-        assertEquals(4, calculateNth(results, 1000))
-        assertEquals(-3, calculateNth(results, 2000))
-        assertEquals(2, calculateNth(results, 3000))
+        val answers = findAnswers(zeroNode)
+
+        assertEquals(3, answers.sumOf { nodes[it].value })
     }
 
     @Test
     fun part1() {
-        val data = loadData()
-        val results = processData(data.map { it.toInt() })
+        val nodes = toNodes(loadData().map { it.toLong() })
+        runCycle(nodes)
 
-        val n1000 = calculateNth(results, 1000)
-        val n2000 = calculateNth(results, 2000)
-        val n3000 = calculateNth(results, 3000)
+        val zeroNode = nodes.find { it.value == 0L }!!
 
-        assertEquals(0, n1000 + n2000 + n3000)
+        val answers = findAnswers(zeroNode)
+
+        assertEquals(10763, answers.sumOf { nodes[it].value })
     }
 
-    private fun calculateNth(data: List<Int>, nth: Int): Int {
-        val indexOfZero = data.indexOf(0)
+    @Test
+    fun part2Sample() {
+        val key = 811589153
+        val original = sample.map { it.toLong() }
+        val nodes = toNodes(original.map { (it * key) % (original.size - 1) })
+        repeat(10) { runCycle(nodes) }
 
-        val idx = ((indexOfZero + nth) % data.size)
+        val zeroNode = nodes.find { it.value == 0L }!!
 
-        if(idx < 0) {
-            return data[data.size - 1]
-        }
-        return data[idx]
+        val answers = findAnswers(zeroNode)
+
+        assertEquals(1623178306, answers.sumOf { original[it] * key })
+
     }
 
-    private fun processData(originalData: List<Int>): List<Int> {
-        val data = originalData
-            .withIndex()
-            .toMutableList()
+    @Test
+    fun part2() {
+        val key = 811589153
 
-        val size = data.size
+        val original = loadData().map { it.toLong() }
+        val nodes = toNodes(original.map { (it * key) % (original.size - 1) })
+        val zeroNode = nodes[original.indexOf(0)]
 
-//        println(data.map { it.value })
+        repeat(10) { runCycle(nodes) }
 
-        for (i in 0 until size) {
-            val currentIndex = data.indexOfFirst { it.index == i }
-            val currentNode = data[currentIndex]
-            val currentValue = currentNode.value
+        val answers = findAnswers(zeroNode)
 
-            val newIndex = calculateNewIndex(currentIndex, currentValue, size)
-
-            doMove(data, currentIndex, newIndex)
-
-//            println(data.map { it.value })
-        }
-
-        return data.map { it.value }
+        assertEquals(4979911042808, answers.sumOf { original[it] * key })
     }
 
-    private fun <T> doMove(data: MutableList<T>, currentIndex: Int, newIndex: Int): List<T> {
-        val currentNode = data[currentIndex]
-        return if (newIndex == currentIndex) {
-            data
-        } else if (newIndex < currentIndex) {
-            data.removeAt(currentIndex)
-            data.add(newIndex, currentNode)
-            data
-        } else {
-            data.add(newIndex + 1, currentNode)
-            data.removeAt(currentIndex)
-            data
+    private fun findAnswers(zeroNode: Node): List<Int> {
+        val answers = mutableListOf<Int>()
+        var current = zeroNode
+        (1..3000).forEach { n ->
+            current = current.next
+            if (n % 1000 == 0) {
+                answers.add(current.origIdx)
+            }
+        }
+        return answers
+    }
+
+    private fun runCycle(nodes: List<Node>) {
+        nodes.forEach { node ->
+            repeat(abs(node.value).toInt()) {
+                if (node.value < 0) {
+                    switchNodes(node.prev, node)
+                } else {
+                    switchNodes(node, node.next)
+                }
+            }
         }
     }
 
-    private fun calculateNewIndex(currentIndex: Int, move: Int, size: Int): Int {
-        val cycledMove = move % size
+    private fun switchNodes(a: Node, b: Node) {
+        val pp = a.prev
+        val nn = b.next
 
-        var x = currentIndex + cycledMove
+        pp.next = b
+        b.prev = pp
 
-        if(cycledMove < 0 && x <= 0) {
-            x -= 1
+        b.next = a
+        a.prev = b
+
+        a.next = nn
+        nn.prev = a
+    }
+
+    private fun toNodes(input: List<Long>): List<Node> {
+        val nodes = input.mapIndexed { idx, i -> Node(idx, i) }
+        nodes.windowed(2).forEach { (a, b) ->
+            a.next = b
+            b.prev = a
         }
 
-        if(cycledMove > 0 && x >= size - 1) {
-            x += 1
-        }
+        nodes.first().prev = nodes.last()
+        nodes.last().next = nodes.first()
 
+        return nodes
+    }
 
-        if(x < 0) {
-            x += size
-        }
-
-        if(x >= size) {
-            x -= size
-        }
-
-        return x
+    data class Node( val origIdx: Int, var value: Long) {
+        lateinit var next: Node
+        lateinit var prev: Node
     }
 
     private fun loadData(filename: String = "day20.txt"): List<String> {
         return File(ClassLoader.getSystemResource(filename).file).readLines()
-    }
-
-    @Test
-    fun testMove() {
-        assertEquals(
-            listOf(2, 1, -3, 3, -2, 0, 4),
-            doMove(mutableListOf(1, 2, -3, 3, -2, 0, 4), 0, 1)
-        )
-        assertEquals(
-            listOf(1, -3, 2, 3, -2, 0, 4),
-            doMove(mutableListOf(2, 1, -3, 3, -2, 0, 4), 0, 2)
-        )
-        assertEquals(
-            listOf(1, 2, 3, -2, -3, 0, 4),
-            doMove(mutableListOf(1, -3, 2, 3, -2, 0, 4), 1, 4)
-        )
-        assertEquals(
-            listOf(1, 2, -2, -3, 0, 3, 4),
-            doMove(mutableListOf(1, 2, 3, -2, -3, 0, 4), 2, 5)
-        )
-        assertEquals(
-            listOf(1, 2, -3, 0, 3, 4, -2),
-            doMove(mutableListOf(1, 2, -2, -3, 0, 3, 4), 2, 6)
-        )
-        assertEquals(
-            listOf(1, 2, -3, 0, 3, 4, -2),
-            doMove(mutableListOf(1, 2, -3, 0, 3, 4, -2), 3, 3)
-        )
-        assertEquals(
-            listOf(1, 2, -3, 4, 0, 3, -2),
-            doMove(mutableListOf(1, 2, -3, 0, 3, 4, -2), 5, 3)
-        )
-    }
-
-
-
-    @Test
-    fun testWrapping() {
-//        assertEquals(1, calculateNewIndex(0, 1, 7))
-//        assertEquals(2, calculateNewIndex(0, 2, 7))
-//        assertEquals(4, calculateNewIndex(1, -3, 7))
-//        assertEquals(5, calculateNewIndex(2, 3, 7))
-//        assertEquals(6, calculateNewIndex(2, -2, 7))
-//        assertEquals(3, calculateNewIndex(3, 0, 7))
-//        assertEquals(3, calculateNewIndex(5, 4, 7))
-
-        assertEquals(5, calculateNewIndex(5, 14, 7))
-        assertEquals(4, calculateNewIndex(5, 13, 7))
-
-//        assertEquals(5, calculateNewIndex(5, -14, 7))
-//        assertEquals(6, calculateNewIndex(5, -13, 7))
     }
 }
